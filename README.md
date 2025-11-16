@@ -4,6 +4,9 @@
 
 Eco Hero is a native iOS app that helps users make sustainable choices through activity logging, AI-powered challenges, waste sorting games, and educational content. Built with SwiftUI and powered by Apple Intelligence on iOS 26+, Eco Hero makes eco-friendly living engaging and rewarding.
 
+> **Copyright © 2025 Rishabh Bansal. All Rights Reserved.**
+> This is proprietary software. See [License](#license) section below for usage terms.
+
 ---
 
 ## Features
@@ -196,16 +199,35 @@ To test AI-powered features (activity suggestions, challenge generation, smart t
 
 ## Contributing
 
-This is a personal project, but feedback and suggestions are welcome! Feel free to:
-- Open issues for bugs or feature requests
-- Share ideas for new eco-friendly activities or challenges
-- Suggest improvements to the waste classification model
+This is a proprietary project. While the source code is visible for educational reference, **contributions, modifications, and derivative works are not permitted** under the current license.
+
+If you have feedback or suggestions, you may:
+- Open issues to report bugs (for reference only)
+- Share ideas via GitHub Discussions (at the author's discretion)
+
+**Note:** Pull requests and code contributions will not be accepted due to the proprietary nature of this software.
 
 ---
 
 ## License
 
-This project is available for educational and personal use. See repository for license details.
+**Copyright © 2025 Rishabh Bansal. All Rights Reserved.**
+
+This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without express written permission from the copyright holder.
+
+**You may:**
+- Run and execute the application for personal, non-commercial use only
+
+**You may NOT:**
+- Copy, modify, or create derivative works
+- Distribute, sell, or sublicense the software
+- Use the software for commercial purposes
+- Reverse engineer or decompile the application
+- Remove copyright notices or proprietary markings
+
+See the [LICENSE](LICENSE) file for complete terms and conditions.
+
+For licensing inquiries or permission requests, please contact via GitHub: [@risban933](https://github.com/risban933)
 
 ---
 
