@@ -11,8 +11,9 @@ import Observation
 #if canImport(FoundationModels)
 import FoundationModels
 
+@available(iOS 26, *)
 @Generable
-struct ActivityIdea {
+struct iOS26ActivityIdea {
     @Guide(description: "A concise action label like 'Walk to the store' or 'Prep veggie lunch'.")
     var actionTitle: String
 
@@ -23,8 +24,9 @@ struct ActivityIdea {
     var motivation: String
 }
 
+@available(iOS 26, *)
 @Generable
-struct ChallengeBlueprint {
+struct iOS26ChallengeBlueprint {
     @Guide(description: "Snappy mission title fewer than 5 words.")
     var title: String
 
@@ -47,46 +49,89 @@ struct ChallengeBlueprint {
     var rewardXP: Int
 }
 
+struct ActivityIdea {
+    var actionTitle: String
+    var activityDescription: String
+    var motivation: String
+}
+
+struct ChallengeBlueprint {
+    var title: String
+    var summary: String
+    var cadence: String
+    var category: String
+    var symbolName: String
+    var targetCount: Int
+    var rewardXP: Int
+}
+
 @Observable
 final class FoundationContentService {
-    private let activitySession: LanguageModelSession
-    private let challengeSession: LanguageModelSession
-
-    init() {
-        activitySession = LanguageModelSession(
-            instructions: """
-            You are part of the Eco Hero app on iOS 26. Use upbeat eco language.
-            Suggest log activities with clear motivation and respect the selected category.
-            """
-        )
-
-        challengeSession = LanguageModelSession(
-            instructions: """
-            Generate sustainability challenges for Eco Hero players.
-            Challenges should feel game-like with clear cadence (daily/weekly/milestone).
-            Include SF Symbol references and realistic target counts.
-            """
-        )
-    }
+    init() {}
 
     func suggestActivity(for category: ActivityCategory) async throws -> ActivityIdea {
-        let prompt = """
-        Create a fresh log idea for the \(category.rawValue) category. Keep it actionable and motivating.
-        """
-        return try await activitySession.respond(
-            to: prompt,
-            generating: ActivityIdea.self
-        ).content
+        if #available(iOS 26, *) {
+            let session = LanguageModelSession(
+                instructions: """
+                You are part of the Eco Hero app on iOS 26. Use upbeat eco language.
+                Suggest log activities with clear motivation and respect the selected category.
+                """
+            )
+
+            let prompt = """
+            Create a fresh log idea for the \(category.rawValue) category. Keep it actionable and motivating.
+            """
+            let ios26Idea = try await session.respond(
+                to: prompt,
+                generating: iOS26ActivityIdea.self
+            ).content
+
+            // Convert to regular ActivityIdea
+            return ActivityIdea(
+                actionTitle: ios26Idea.actionTitle,
+                activityDescription: ios26Idea.activityDescription,
+                motivation: ios26Idea.motivation
+            )
+        } else {
+            // Fallback - should never happen as canImport guards this
+            throw NSError(domain: "FoundationContent", code: 1,
+                         userInfo: [NSLocalizedDescriptionKey: "FoundationModels not available"])
+        }
     }
 
     func generateChallenge() async throws -> ChallengeBlueprint {
-        let prompt = """
-        Create a new Eco Hero mission. Keep it inspiring and vary the cadence and category.
-        """
-        return try await challengeSession.respond(
-            to: prompt,
-            generating: ChallengeBlueprint.self
-        ).content
+        if #available(iOS 26, *) {
+            let session = LanguageModelSession(
+                instructions: """
+                Generate sustainability challenges for Eco Hero players.
+                Challenges should feel game-like with clear cadence (daily/weekly/milestone).
+                Include SF Symbol references and realistic target counts.
+                """
+            )
+
+            let prompt = """
+            Create a new Eco Hero mission. Keep it inspiring and vary the cadence and category.
+            """
+            let ios26Blueprint = try await session.respond(
+                to: prompt,
+                generating: iOS26ChallengeBlueprint.self
+            ).content
+
+            // Convert to regular ChallengeBlueprint
+            return ChallengeBlueprint(
+                title: ios26Blueprint.title,
+                summary: ios26Blueprint.summary,
+                cadence: ios26Blueprint.cadence,
+                category: ios26Blueprint.category,
+                symbolName: ios26Blueprint.symbolName,
+                targetCount: ios26Blueprint.targetCount,
+                rewardXP: ios26Blueprint.rewardXP
+            )
+        } else {
+            // Fallback - should never happen as canImport guards this
+            throw NSError(domain: "FoundationContent", code: 1,
+                         userInfo: [NSLocalizedDescriptionKey: "FoundationModels not available"])
+        }
     }
 }
 

@@ -173,17 +173,21 @@ struct LogActivityView: View {
                 Text("Choose an action")
                     .font(.headline)
                 Spacer()
-                Button {
-                    generateAISuggestion()
-                } label: {
-                    if isGeneratingSuggestion {
-                        ProgressView()
-                    } else {
-                        Label("Suggest", systemImage: "wand.and.stars")
+
+                // Apple Intelligence feature - only available on iOS 26+
+                if #available(iOS 26, *) {
+                    Button {
+                        generateAISuggestion()
+                    } label: {
+                        if isGeneratingSuggestion {
+                            ProgressView()
+                        } else {
+                            Label("Suggest", systemImage: "wand.and.stars")
+                        }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isGeneratingSuggestion)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isGeneratingSuggestion)
             }
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: AppConstants.Layout.gridSpacing) {
@@ -199,26 +203,29 @@ struct LogActivityView: View {
                 }
             }
 
-            if let aiSuggestion {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(aiSuggestion.actionTitle)
-                        .font(.headline)
-                    Text(aiSuggestion.activityDescription)
-                        .font(.subheadline)
-                    Text(aiSuggestion.motivation)
+            // Apple Intelligence suggestion display - only on iOS 26+
+            if #available(iOS 26, *) {
+                if let aiSuggestion {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(aiSuggestion.actionTitle)
+                            .font(.headline)
+                        Text(aiSuggestion.activityDescription)
+                            .font(.subheadline)
+                        Text(aiSuggestion.motivation)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .onTapGesture {
+                        selectedActivityType = aiSuggestion.actionTitle
+                        notes = aiSuggestion.motivation
+                    }
+                } else if let suggestionError {
+                    Text(suggestionError)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.red)
                 }
-                .padding()
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
-                .onTapGesture {
-                    selectedActivityType = aiSuggestion.actionTitle
-                    notes = aiSuggestion.motivation
-                }
-            } else if let suggestionError {
-                Text(suggestionError)
-                    .font(.footnote)
-                    .foregroundStyle(.red)
             }
         }
         .cardStyle()
@@ -300,25 +307,50 @@ struct LogActivityView: View {
 
     private var primaryButton: some View {
         GlassEffectContainer(spacing: 0) {
-            Button(action: logActivity) {
-                HStack {
-                    Spacer()
-                    if isSyncing {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Label("Save activity", systemImage: "checkmark.seal.fill")
-                            .font(.headline)
+            if #available(iOS 26, *) {
+                Button(action: logActivity) {
+                    HStack {
+                        Spacer()
+                        if isSyncing {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Label("Save activity", systemImage: "checkmark.seal.fill")
+                                .font(.headline)
+                        }
+                        Spacer()
                     }
-                    Spacer()
+                    .padding()
+                    .foregroundStyle(.white)
                 }
-                .padding()
-                .foregroundStyle(.white)
+                .buttonStyle(.glass(.regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()))
+                .glassEffectID("save-activity", in: glassNamespace)
+                .disabled(selectedActivityType.isEmpty || isSyncing)
+                .opacity((selectedActivityType.isEmpty || isSyncing) ? 0.6 : 1.0)
+            } else {
+                Button(action: logActivity) {
+                    HStack {
+                        Spacer()
+                        if isSyncing {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Label("Save activity", systemImage: "checkmark.seal.fill")
+                                .font(.headline)
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.compatibleGlass(
+                    tintColor: AppConstants.Colors.ocean.opacity(0.6),
+                    cornerRadius: 16,
+                    interactive: true
+                ))
+                .disabled(selectedActivityType.isEmpty || isSyncing)
+                .opacity((selectedActivityType.isEmpty || isSyncing) ? 0.6 : 1.0)
             }
-            .buttonStyle(.glass(.regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()))
-            .glassEffectID("save-activity", in: glassNamespace)
-            .disabled(selectedActivityType.isEmpty || isSyncing)
-            .opacity((selectedActivityType.isEmpty || isSyncing) ? 0.6 : 1.0)
         }
         .shadow(color: Color.black.opacity(0.2), radius: 12, x: 0, y: 6)
     }

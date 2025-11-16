@@ -105,10 +105,13 @@ struct WasteSortingView: View {
     private var topStatsBar: some View {
         HStack(spacing: 12) {
             statBadge(title: "Score", value: "\(score)", icon: "star.fill", color: .yellow)
+                .compatibleGlassEffectID("stat-score", in: glassNamespace)
             statBadge(title: "Streak", value: "\(streak)", icon: "flame.fill", color: .orange)
+                .compatibleGlassEffectID("stat-streak", in: glassNamespace)
             statBadge(title: "Accuracy", value: "\(accuracyString)%", icon: "target", color: .green)
+                .compatibleGlassEffectID("stat-accuracy", in: glassNamespace)
         }
-        .glassEffectUnion(id: "stats", namespace: glassNamespace)
+        .compatibleGlassEffectUnion(id: "stats", namespace: glassNamespace)
     }
 
     private func statBadge(title: String, value: String, icon: String, color: Color) -> some View {
@@ -128,8 +131,6 @@ struct WasteSortingView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .glassEffect(.regular)
-        .glassEffectID("stat-\(title)", in: glassNamespace)
     }
 
     private var predictionOverlay: some View {
@@ -168,8 +169,12 @@ struct WasteSortingView: View {
         }
         .padding(.vertical, 28)
         .padding(.horizontal, 36)
-        .glassEffect(.regular.tint(classifier.predictedBin.color.opacity(0.2)).interactive(), in: .rect(cornerRadius: 32))
-        .glassEffectID("prediction", in: glassNamespace)
+        .compatibleGlassEffect(
+            tintColor: classifier.predictedBin.color.opacity(0.2),
+            cornerRadius: 32,
+            interactive: true
+        )
+        .compatibleGlassEffectID("prediction", in: glassNamespace)
     }
 
     private var confidenceMeter: some View {
@@ -217,9 +222,13 @@ struct WasteSortingView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
-        .glassEffect(.regular.tint((lastResultCorrect == true ? Color.green : Color.red).opacity(0.4)), in: .rect(cornerRadius: 20))
-        .glassEffectID("feedback", in: glassNamespace)
-        .glassEffectTransition(.materialize)
+        .compatibleGlassEffect(
+            tintColor: (lastResultCorrect == true ? Color.green : Color.red).opacity(0.4),
+            cornerRadius: 20,
+            interactive: false
+        )
+        .compatibleGlassEffectID("feedback", in: glassNamespace)
+        .compatibleGlassEffectTransition()
         .transition(.asymmetric(
             insertion: .move(edge: .top).combined(with: .opacity),
             removal: .opacity
@@ -229,25 +238,50 @@ struct WasteSortingView: View {
     private var binButtons: some View {
         HStack(spacing: 24) {
             ForEach(WasteBin.allCases, id: \.self) { bin in
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                        evaluateSelection(bin)
-                    }
-                } label: {
-                    VStack(spacing: 8) {
-                        Image(systemName: bin.icon)
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundStyle(.white)
+                if #available(iOS 26, *) {
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            evaluateSelection(bin)
+                        }
+                    } label: {
+                        VStack(spacing: 8) {
+                            Image(systemName: bin.icon)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(.white)
 
-                        Text(bin.rawValue)
-                            .font(.subheadline.bold())
-                            .foregroundStyle(.white)
+                            Text(bin.rawValue)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 120)
+                        .padding(.vertical, 16)
                     }
-                    .frame(width: 120)
-                    .padding(.vertical, 16)
+                    .buttonStyle(.glass(.regular.tint(binColor(for: bin).opacity(0.6)).interactive()))
+                    .glassEffectID("bin-\(bin.rawValue)", in: glassNamespace)
+                } else {
+                    Button {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            evaluateSelection(bin)
+                        }
+                    } label: {
+                        VStack(spacing: 8) {
+                            Image(systemName: bin.icon)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundStyle(.white)
+
+                            Text(bin.rawValue)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.white)
+                        }
+                        .frame(width: 120)
+                        .padding(.vertical, 16)
+                    }
+                    .buttonStyle(.compatibleGlass(
+                        tintColor: binColor(for: bin).opacity(0.6),
+                        cornerRadius: 16,
+                        interactive: true
+                    ))
                 }
-                .buttonStyle(.glass(.regular.tint(binColor(for: bin).opacity(0.6)).interactive()))
-                .glassEffectID("bin-\(bin.rawValue)", in: glassNamespace)
             }
         }
     }
@@ -284,8 +318,8 @@ struct WasteSortingView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 12)
-        .glassEffect(.regular, in: .capsule)
-        .glassEffectID("history", in: glassNamespace)
+        .compatibleGlassEffect(shape: Capsule(), interactive: false)
+        .compatibleGlassEffectID("history", in: glassNamespace)
     }
 
     private func evaluateSelection(_ bin: WasteBin) {

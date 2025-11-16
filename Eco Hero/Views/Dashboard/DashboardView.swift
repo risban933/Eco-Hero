@@ -394,8 +394,12 @@ private struct QuickActionCard: View {
         .foregroundStyle(.white)
         .padding()
         .frame(maxWidth: .infinity, minHeight: 120)
-        .glassEffect(.regular.tint(action.colors.first?.opacity(0.5) ?? .clear).interactive(), in: .rect(cornerRadius: AppConstants.Layout.compactCornerRadius))
-        .glassEffectID("action-\(action.title)", in: namespace)
+        .compatibleGlassEffect(
+            tintColor: action.colors.first?.opacity(0.5),
+            cornerRadius: AppConstants.Layout.compactCornerRadius,
+            interactive: true
+        )
+        .compatibleGlassEffectID("action-\(action.title)", in: namespace)
     }
 }
 

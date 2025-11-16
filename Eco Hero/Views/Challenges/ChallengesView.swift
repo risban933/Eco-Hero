@@ -112,8 +112,8 @@ struct ChallengesView: View {
                     Image(systemName: "trophy.fill")
                         .font(.system(size: 40))
                         .padding(16)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
-                        .glassEffectID("trophy-icon", in: glassNamespace)
+                        .compatibleGlassEffect(cornerRadius: 20, interactive: false)
+                        .compatibleGlassEffectID("trophy-icon", in: glassNamespace)
                 }
 
                 HStack(spacing: 12) {
@@ -122,30 +122,37 @@ struct ChallengesView: View {
                     HeroStatView(title: "Badges", value: "\(unlockedAchievements.count)", icon: "star.fill")
                 }
 
-                Button {
-                    requestFoundationChallenge()
-                } label: {
-                    if isGeneratingChallenge {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Label("Generate new mission", systemImage: "sparkles")
-                            .font(.headline)
+                // Apple Intelligence feature - only available on iOS 26+
+                if #available(iOS 26, *) {
+                    Button {
+                        requestFoundationChallenge()
+                    } label: {
+                        if isGeneratingChallenge {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Label("Generate new mission", systemImage: "sparkles")
+                                .font(.headline)
+                        }
                     }
-                }
-                .buttonStyle(.glass(.regular.interactive()))
-                .glassEffectID("generate-mission", in: glassNamespace)
-                .disabled(isGeneratingChallenge)
+                    .buttonStyle(.glass(.regular.interactive()))
+                    .glassEffectID("generate-mission", in: glassNamespace)
+                    .disabled(isGeneratingChallenge)
 
-                if let generationMessage {
-                    Text(generationMessage)
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.9))
+                    if let generationMessage {
+                        Text(generationMessage)
+                            .font(.footnote)
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
                 }
             }
             .padding(24)
-            .glassEffect(.regular.tint(Color.ecoGreen.opacity(0.4)), in: .rect(cornerRadius: 32))
-            .glassEffectID("hero-banner", in: glassNamespace)
+            .compatibleGlassEffect(
+                tintColor: Color.ecoGreen.opacity(0.4),
+                cornerRadius: 32,
+                interactive: false
+            )
+            .compatibleGlassEffectID("hero-banner", in: glassNamespace)
         }
         .foregroundStyle(.white)
         .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
@@ -155,30 +162,56 @@ struct ChallengesView: View {
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 12) {
                 ForEach(ChallengeTab.allCases) { tab in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            selectedTab = tab
+                    if #available(iOS 26, *) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTab = tab
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: tab.icon)
+                                Text(tab.rawValue)
+                                    .font(.subheadline.bold())
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .foregroundStyle(selectedTab == tab ? .white : .primary)
                         }
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: tab.icon)
-                            Text(tab.rawValue)
-                                .font(.subheadline.bold())
+                        .buttonStyle(.glass(selectedTab == tab
+                            ? .regular.tint(AppConstants.Colors.ocean.opacity(0.5)).interactive()
+                            : .regular.interactive()))
+                        .glassEffectID("tab-\(tab.rawValue)", in: glassNamespace)
+                    } else {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                selectedTab = tab
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: tab.icon)
+                                Text(tab.rawValue)
+                                    .font(.subheadline.bold())
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .foregroundStyle(selectedTab == tab ? .white : .primary)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .foregroundStyle(selectedTab == tab ? .white : .primary)
+                        .buttonStyle(.compatibleGlass(
+                            tintColor: selectedTab == tab ? AppConstants.Colors.ocean.opacity(0.5) : nil,
+                            cornerRadius: 16,
+                            interactive: true
+                        ))
                     }
-                    .buttonStyle(.glass(selectedTab == tab
-                        ? .regular.tint(AppConstants.Colors.ocean.opacity(0.5)).interactive()
-                        : .regular.interactive()))
-                    .glassEffectID("tab-\(tab.rawValue)", in: glassNamespace)
                 }
             }
         }
         .padding(6)
-        .glassEffect(.regular.tint(Color.primary.opacity(0.05)), in: .rect(cornerRadius: 24))
-        .glassEffectID("tab-picker", in: glassNamespace)
+        .compatibleGlassEffect(
+            tintColor: Color.primary.opacity(0.05),
+            cornerRadius: 24,
+            interactive: false
+        )
+        .compatibleGlassEffectID("tab-picker", in: glassNamespace)
     }
 
     private func challengesSection<Content: View>(title: String, subtitle: String, items: [Challenge], @ViewBuilder content: @escaping (Challenge) -> Content) -> some View {

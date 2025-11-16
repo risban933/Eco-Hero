@@ -86,7 +86,9 @@ Use directly: `category.color` (NOT `Color(category.color)`)
 
 3. **No UIMainStoryboardFile** - SwiftUI app, removed empty key from Info.plist
 
-4. **Target:** iOS 26.0+, iPhone/iPad
+4. **Target:** iOS 18.0+ (minimum), iPhone/iPad
+   - Full iOS 26 features available on iOS 26+ devices
+   - Backward compatible with iOS 18-25
 
 ## Recent Changes (Nov 2025)
 
@@ -106,6 +108,59 @@ Use directly: `category.color` (NOT `Color(category.color)`)
 - Fixed missing executable in app bundle
 - Resolved `CFBundleExecutable` path issues
 
+## Backward Compatibility (iOS 18.0+)
+
+### Overview
+Eco Hero targets iOS 18.0 minimum while preserving full iOS 26 functionality on supported devices.
+
+### iOS 26-Specific Features
+
+**1. Liquid Glass Effects**
+- iOS 26+: Full Liquid Glass with interactive tinting and fluid transitions
+- iOS 18-25: Material blur (`.ultraThinMaterial`) with visually similar appearance
+- Implementation: `LiquidGlassCompatibility.swift` (Utilities/)
+
+**Compatibility Methods:**
+- `.glassEffect()` → `.compatibleGlassEffect()`
+- `.glassEffectID()` → `.compatibleGlassEffectID()`
+- `.glassEffectUnion()` → `.compatibleGlassEffectUnion()`
+- `.glassEffectTransition()` → `.compatibleGlassEffectTransition()`
+- `.buttonStyle(.glass())` → `.buttonStyle(.compatibleGlass())`
+
+**2. Apple Intelligence (FoundationModels)**
+- iOS 26+: On-device AI with `LanguageModelSession` for tip generation and challenges
+- iOS 18-25: **All generative AI features completely hidden**
+  - No "Generate new mission" button (ChallengesView)
+  - No "Smart tip generator" section (LearnView)
+  - No "Suggest" button for activities (LogActivityView)
+- Implementation: `FoundationContentService.swift` uses `#if canImport(FoundationModels)` checks
+- iOS26-specific types (`iOS26ActivityIdea`, `iOS26ChallengeBlueprint`) converted to regular types
+- UI elements wrapped in `if #available(iOS 26, *)` to hide on older devices
+
+**3. Runtime Availability Checks**
+All iOS 26 features wrapped in:
+```swift
+if #available(iOS 26, *) {
+    // Use iOS 26 features
+} else {
+    // Fallback for iOS 18-25
+}
+```
+
+### Views Using Compatibility Layer
+- `DashboardView.swift` - Glass quick action cards
+- `WasteSortingView.swift` - Glass stats badges, prediction overlay
+- `LogActivityView.swift` - Glass save button
+- `LearnView.swift` - Glass fact cards, tip generator
+- `ChallengesView.swift` - Glass hero banner, tab picker
+
+### Testing Checklist
+- [x] Build succeeds with iOS 18.0 deployment target
+- [ ] App runs on iOS 18 simulator (fallback UI)
+- [ ] App runs on iOS 26 simulator (full Liquid Glass + Apple Intelligence)
+- [ ] No visual regressions on either version
+- [ ] All features functional on both versions
+
 ## Development Notes
 
 - Uses `@Observable` macro (modern Swift Observation)
@@ -114,3 +169,4 @@ Use directly: `category.color` (NOT `Color(category.color)`)
 - Vision + CoreML for image classification
 - Local auth manager (no Firebase currently active)
 - Supports both ML model and color-based fallback
+- **Backward compatible with iOS 18.0+** using runtime availability checks

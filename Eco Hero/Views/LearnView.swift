@@ -34,7 +34,12 @@ struct LearnView: View {
             VStack(spacing: AppConstants.Layout.sectionSpacing) {
                 dailyFactCard
                 tipsSection
-                smartTipSection
+
+                // Apple Intelligence feature - only show on iOS 26+
+                if #available(iOS 26, *) {
+                    smartTipSection
+                }
+
                 allFactsSection
             }
             .padding(.horizontal, 20)
@@ -60,15 +65,26 @@ struct LearnView: View {
                     Label("Eco fact of the day", systemImage: "globe.asia.australia.fill")
                         .font(.headline)
                     Spacer()
-                    Button {
-                        withAnimation(.spring) {
-                            factOfDay = AppConstants.EducationalFacts.randomFact()
+                    if #available(iOS 26, *) {
+                        Button {
+                            withAnimation(.spring) {
+                                factOfDay = AppConstants.EducationalFacts.randomFact()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
                         }
-                    } label: {
-                        Image(systemName: "arrow.triangle.2.circlepath")
+                        .buttonStyle(.glass(.regular.interactive()))
+                        .glassEffectID("refresh-fact", in: glassNamespace)
+                    } else {
+                        Button {
+                            withAnimation(.spring) {
+                                factOfDay = AppConstants.EducationalFacts.randomFact()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                        .buttonStyle(.compatibleGlass(cornerRadius: 16, interactive: true))
                     }
-                    .buttonStyle(.glass(.regular.interactive()))
-                    .glassEffectID("refresh-fact", in: glassNamespace)
                 }
 
                 Text(factOfDay)
@@ -80,8 +96,12 @@ struct LearnView: View {
                     .foregroundStyle(.white.opacity(0.9))
             }
             .padding(24)
-            .glassEffect(.regular.tint(Color.ecoGreen.opacity(0.4)), in: .rect(cornerRadius: 28))
-            .glassEffectID("daily-fact", in: glassNamespace)
+            .compatibleGlassEffect(
+                tintColor: Color.ecoGreen.opacity(0.4),
+                cornerRadius: 28,
+                interactive: false
+            )
+            .compatibleGlassEffectID("daily-fact", in: glassNamespace)
         }
         .shadow(color: Color.black.opacity(0.2), radius: 24, x: 0, y: 12)
     }
@@ -98,6 +118,7 @@ struct LearnView: View {
         }
     }
 
+    @available(iOS 26, *)
     private var smartTipSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
