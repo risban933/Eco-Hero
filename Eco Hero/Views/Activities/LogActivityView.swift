@@ -10,6 +10,7 @@ import SwiftData
 
 struct LogActivityView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthenticationManager.self) private var authManager
     @Environment(CloudSyncService.self) private var syncService
     @Environment(FoundationContentService.self) private var foundationContentService
@@ -25,6 +26,7 @@ struct LogActivityView: View {
     @State private var isGeneratingSuggestion = false
     @State private var suggestionError: String?
     @FocusState private var focusedField: FocusField?
+    @Namespace private var glassNamespace
 
     private enum FocusField: Hashable {
         case distance
@@ -62,7 +64,16 @@ struct LogActivityView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 30)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(
+                LinearGradient(
+                    colors: colorScheme == .dark
+                        ? [Color.green.opacity(0.3), Color.black]
+                        : [Color.green.opacity(0.15), Color.white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Log Activity")
             .alert("Success!", isPresented: $showSuccess) {
@@ -288,25 +299,28 @@ struct LogActivityView: View {
     }
 
     private var primaryButton: some View {
-        Button(action: logActivity) {
-            HStack {
-                Spacer()
-                if isSyncing {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Label("Save activity", systemImage: "checkmark.seal.fill")
-                        .font(.headline)
+        GlassEffectContainer(spacing: 0) {
+            Button(action: logActivity) {
+                HStack {
+                    Spacer()
+                    if isSyncing {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Label("Save activity", systemImage: "checkmark.seal.fill")
+                            .font(.headline)
+                    }
+                    Spacer()
                 }
-                Spacer()
+                .padding()
+                .foregroundStyle(.white)
             }
-            .padding()
-            .background(AppConstants.Gradients.accent)
-            .cornerRadius(AppConstants.Layout.cardCornerRadius)
-            .shadow(color: Color.black.opacity(0.2), radius: 12, x: 0, y: 6)
+            .buttonStyle(.glass(.regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()))
+            .glassEffectID("save-activity", in: glassNamespace)
+            .disabled(selectedActivityType.isEmpty || isSyncing)
+            .opacity((selectedActivityType.isEmpty || isSyncing) ? 0.6 : 1.0)
         }
-        .buttonStyle(.plain)
-        .disabled(selectedActivityType.isEmpty || isSyncing)
+        .shadow(color: Color.black.opacity(0.2), radius: 12, x: 0, y: 6)
     }
 
     private func categoryDescription(for category: ActivityCategory) -> String {

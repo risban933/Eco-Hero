@@ -17,6 +17,7 @@ struct DashboardView: View {
 
     @State private var highlightFact = AppConstants.EducationalFacts.randomFact()
     @State private var activeSheet: DashboardSheet?
+    @Namespace private var glassNamespace
 
     private var userProfile: UserProfile? {
         profiles.first { $0.userIdentifier == authManager.currentUserID ?? "" }
@@ -129,14 +130,16 @@ struct DashboardView: View {
     }
 
     private var quickActionsSection: some View {
-        HStack(spacing: 16) {
-            ForEach(DashboardQuickAction.actions) { action in
-                Button {
-                    activeSheet = action.sheet
-                } label: {
-                    QuickActionCard(action: action)
+        GlassEffectContainer(spacing: 16) {
+            HStack(spacing: 16) {
+                ForEach(DashboardQuickAction.actions) { action in
+                    Button {
+                        activeSheet = action.sheet
+                    } label: {
+                        QuickActionCard(action: action, namespace: glassNamespace)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -373,32 +376,26 @@ struct ActivityRowView: View {
 
 private struct QuickActionCard: View {
     let action: DashboardQuickAction
+    let namespace: Namespace.ID
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Image(systemName: action.icon)
                 .font(.title2)
                 .padding(10)
-                .background(Color.white.opacity(0.2), in: Circle())
+                .background(Color.white.opacity(0.3), in: Circle())
             Spacer(minLength: 0)
             Text(action.title)
                 .font(.headline)
             Text(action.subtitle)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.white.opacity(0.8))
         }
         .foregroundStyle(.white)
         .padding()
         .frame(maxWidth: .infinity, minHeight: 120)
-        .background(
-            LinearGradient(
-                colors: action.colors,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .cornerRadius(AppConstants.Layout.compactCornerRadius)
-        )
-        .shadow(color: action.colors.last?.opacity(0.4) ?? .black.opacity(0.2), radius: 12, x: 0, y: 6)
+        .glassEffect(.regular.tint(action.colors.first?.opacity(0.5) ?? .clear).interactive(), in: .rect(cornerRadius: AppConstants.Layout.compactCornerRadius))
+        .glassEffectID("action-\(action.title)", in: namespace)
     }
 }
 

@@ -14,6 +14,7 @@ struct LearnView: View {
     @State private var selectedCategory: ActivityCategory = .meals
     @State private var smartTip: String?
     @State private var factOfDay: String = AppConstants.EducationalFacts.randomFact()
+    @Namespace private var glassNamespace
 
     var body: some View {
         Group {
@@ -53,40 +54,35 @@ struct LearnView: View {
     }
 
     private var dailyFactCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label("Eco fact of the day", systemImage: "globe.asia.australia.fill")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    withAnimation(.spring) {
-                        factOfDay = AppConstants.EducationalFacts.randomFact()
+        GlassEffectContainer(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Label("Eco fact of the day", systemImage: "globe.asia.australia.fill")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        withAnimation(.spring) {
+                            factOfDay = AppConstants.EducationalFacts.randomFact()
+                        }
+                    } label: {
+                        Image(systemName: "arrow.triangle.2.circlepath")
                     }
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
+                    .buttonStyle(.glass(.regular.interactive()))
+                    .glassEffectID("refresh-fact", in: glassNamespace)
                 }
-                .buttonStyle(.plain)
-                .padding(8)
-                .background(Color.white.opacity(0.2), in: Circle())
+
+                Text(factOfDay)
+                    .font(.body)
+                    .foregroundStyle(.white)
+
+                Text("Share this insight with a friend today.")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.9))
             }
-
-            Text(factOfDay)
-                .font(.body)
-                .foregroundStyle(.white)
-
-            Text("Share this insight with a friend today.")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.9))
+            .padding(24)
+            .glassEffect(.regular.tint(Color.ecoGreen.opacity(0.4)), in: .rect(cornerRadius: 28))
+            .glassEffectID("daily-fact", in: glassNamespace)
         }
-        .padding(24)
-        .background(
-            LinearGradient(
-                colors: [Color.ecoGreen, AppConstants.Colors.ocean],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-        )
         .shadow(color: Color.black.opacity(0.2), radius: 24, x: 0, y: 12)
     }
 
@@ -145,21 +141,22 @@ struct LearnView: View {
             .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             .frame(minHeight: 80)
 
-            Button(action: generateSmartTip) {
-                Label(
-                    tipModel.isGenerating ? "Generating..." : "Generate Smart Tip",
-                    systemImage: tipModel.isGenerating ? "sparkles" : "bolt.fill"
-                )
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(AppConstants.Gradients.accent)
-                .foregroundStyle(.white)
-                .cornerRadius(AppConstants.Layout.cardCornerRadius)
+            GlassEffectContainer(spacing: 0) {
+                Button(action: generateSmartTip) {
+                    Label(
+                        tipModel.isGenerating ? "Generating..." : "Generate Smart Tip",
+                        systemImage: tipModel.isGenerating ? "sparkles" : "bolt.fill"
+                    )
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.glass(.regular.tint(AppConstants.Colors.ocean.opacity(0.6)).interactive()))
+                .glassEffectID("generate-tip", in: glassNamespace)
+                .disabled(tipModel.isGenerating)
+                .opacity(tipModel.isGenerating ? 0.7 : 1.0)
             }
-            .buttonStyle(.plain)
-            .disabled(tipModel.isGenerating)
-            .opacity(tipModel.isGenerating ? 0.7 : 1.0)
         }
         .cardStyle()
         .onAppear {

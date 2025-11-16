@@ -10,6 +10,7 @@ import SwiftData
 
 struct ChallengesView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthenticationManager.self) private var authManager
     @Environment(FoundationContentService.self) private var foundationContentService
     @Query private var challenges: [Challenge]
@@ -18,6 +19,7 @@ struct ChallengesView: View {
     @State private var selectedTab: ChallengeTab = .active
     @State private var isGeneratingChallenge = false
     @State private var generationMessage: String?
+    @Namespace private var glassNamespace
 
     enum ChallengeTab: String, CaseIterable, Identifiable {
         case active = "Active"
@@ -82,7 +84,9 @@ struct ChallengesView: View {
             }
             .background(
                 LinearGradient(
-                    colors: [AppConstants.Colors.sand, Color(.systemGroupedBackground)],
+                    colors: colorScheme == .dark
+                        ? [Color.green.opacity(0.3), Color.black]
+                        : [Color.green.opacity(0.15), Color.white],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -94,87 +98,87 @@ struct ChallengesView: View {
     }
 
     private var heroBanner: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Level up your eco journey")
-                        .font(.title2.bold())
-                    Text("Complete themed missions for streaks, XP, and badges.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+        GlassEffectContainer(spacing: 16) {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Level up your eco journey")
+                            .font(.title2.bold())
+                        Text("Complete themed missions for streaks, XP, and badges.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    Spacer()
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 40))
+                        .padding(16)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                        .glassEffectID("trophy-icon", in: glassNamespace)
                 }
-                Spacer()
-                Image(systemName: "trophy.fill")
-                    .font(.system(size: 40))
-                    .padding(16)
-                    .background(Color.white.opacity(0.2), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            }
 
-            HStack(spacing: 12) {
-                HeroStatView(title: "Active", value: "\(activeChallenges.count)", icon: "flame.fill")
-                HeroStatView(title: "Completed", value: "\(completedChallenges.count)", icon: "checkmark.seal.fill")
-                HeroStatView(title: "Badges", value: "\(unlockedAchievements.count)", icon: "star.fill")
-            }
+                HStack(spacing: 12) {
+                    HeroStatView(title: "Active", value: "\(activeChallenges.count)", icon: "flame.fill")
+                    HeroStatView(title: "Completed", value: "\(completedChallenges.count)", icon: "checkmark.seal.fill")
+                    HeroStatView(title: "Badges", value: "\(unlockedAchievements.count)", icon: "star.fill")
+                }
 
-            Button {
-                requestFoundationChallenge()
-            } label: {
-                if isGeneratingChallenge {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Label("Generate new mission", systemImage: "sparkles")
-                        .font(.headline)
+                Button {
+                    requestFoundationChallenge()
+                } label: {
+                    if isGeneratingChallenge {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Label("Generate new mission", systemImage: "sparkles")
+                            .font(.headline)
+                    }
+                }
+                .buttonStyle(.glass(.regular.interactive()))
+                .glassEffectID("generate-mission", in: glassNamespace)
+                .disabled(isGeneratingChallenge)
+
+                if let generationMessage {
+                    Text(generationMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.white.opacity(0.9))
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.white.opacity(0.3))
-
-            if let generationMessage {
-                Text(generationMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.9))
-            }
+            .padding(24)
+            .glassEffect(.regular.tint(Color.ecoGreen.opacity(0.4)), in: .rect(cornerRadius: 32))
+            .glassEffectID("hero-banner", in: glassNamespace)
         }
-        .padding(24)
-        .background(
-            LinearGradient(
-                colors: [Color.ecoGreen, AppConstants.Colors.ocean],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        )
         .foregroundStyle(.white)
         .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 
     private var tabPicker: some View {
-        HStack(spacing: 12) {
-            ForEach(ChallengeTab.allCases) { tab in
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = tab
+        GlassEffectContainer(spacing: 12) {
+            HStack(spacing: 12) {
+                ForEach(ChallengeTab.allCases) { tab in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selectedTab = tab
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: tab.icon)
+                            Text(tab.rawValue)
+                                .font(.subheadline.bold())
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundStyle(selectedTab == tab ? .white : .primary)
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: tab.icon)
-                        Text(tab.rawValue)
-                            .font(.subheadline.bold())
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(selectedTab == tab ? AnyShapeStyle(AppConstants.Gradients.accent) : AnyShapeStyle(Color.primary.opacity(0.08)))
-                    }
-                    .foregroundStyle(selectedTab == tab ? .white : .primary)
+                    .buttonStyle(.glass(selectedTab == tab
+                        ? .regular.tint(AppConstants.Colors.ocean.opacity(0.5)).interactive()
+                        : .regular.interactive()))
+                    .glassEffectID("tab-\(tab.rawValue)", in: glassNamespace)
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(6)
-        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .glassEffect(.regular.tint(Color.primary.opacity(0.05)), in: .rect(cornerRadius: 24))
+        .glassEffectID("tab-picker", in: glassNamespace)
     }
 
     private func challengesSection<Content: View>(title: String, subtitle: String, items: [Challenge], @ViewBuilder content: @escaping (Challenge) -> Content) -> some View {
