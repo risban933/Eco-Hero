@@ -209,34 +209,13 @@ If you have feedback or suggestions, you may:
 
 ---
 
-## License
-
-**Copyright © 2025 Rishabh Bansal. All Rights Reserved.**
-
-This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited without express written permission from the copyright holder.
-
-**You may:**
-- Run and execute the application for personal, non-commercial use only
-
-**You may NOT:**
-- Copy, modify, or create derivative works
-- Distribute, sell, or sublicense the software
-- Use the software for commercial purposes
-- Reverse engineer or decompile the application
-- Remove copyright notices or proprietary markings
-
-See the [LICENSE](LICENSE) file for complete terms and conditions.
-
-For licensing inquiries or permission requests, please contact via GitHub: [@risban933](https://github.com/risban933)
-
----
-
 ## Acknowledgments
 
 Built with:
 - SwiftUI and modern Swift concurrency
 - Apple's Vision and CoreML frameworks
 - FoundationModels for on-device AI (iOS 26+)
+- Utilized public dataset for ML training purposes
 - Claude Code for development assistance
 
 ---
