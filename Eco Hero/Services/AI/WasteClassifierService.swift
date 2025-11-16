@@ -50,7 +50,7 @@ final class WasteClassifierService: NSObject {
 
     // MARK: - Rolling Average Properties
     private var predictionBuffer: [(bin: WasteBin, confidence: Double)] = []
-    private let bufferSize: Int = 15  // ~0.5 seconds at 30fps for smoother results
+    private let bufferSize: Int = 10  // ~0.3 seconds at 30fps
     private let stabilityThreshold: Double = 0.6  // Minimum confidence to update display
 
     // MARK: - Initialization
