@@ -106,7 +106,7 @@ struct LogActivityView: View {
                         Text("Total impact")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("\(profile.totalCarbonSavedKg.rounded(toPlaces: 1)) kg CO₂")
+                        Text("\(profile.totalCarbonSavedKg.rounded(toPlaces: 2)) kg CO₂")
                             .font(.headline)
                     }
 
@@ -280,7 +280,7 @@ struct LogActivityView: View {
                     ImpactMetricRow(title: "Plastic Avoided", value: "\(impact.plasticSavedItems) items", icon: "bag.fill", tint: .orange)
                 }
                 if impact.landSavedSqMeters > 0 {
-                    ImpactMetricRow(title: "Land Preserved", value: "\(impact.landSavedSqMeters.rounded(toPlaces: 1)) m²", icon: "leaf.fill", tint: .green)
+                    ImpactMetricRow(title: "Land Preserved", value: "\(impact.landSavedSqMeters.rounded(toPlaces: 2)) m²", icon: "leaf.fill", tint: .green)
                 }
             }
         }

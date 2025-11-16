@@ -55,7 +55,7 @@ extension Double {
     var formattedWithCommas: String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 1
+        formatter.maximumFractionDigits = 2
         return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
     }
 
@@ -65,14 +65,22 @@ extension Double {
         let million = 1_000_000.0
 
         if self >= million {
-            return String(format: "%.1fM", self / million)
+            return String(format: "%.2fM", self / million)
         } else if self >= thousand {
-            return String(format: "%.1fK", self / thousand)
+            return String(format: "%.2fK", self / thousand)
+        } else if self == floor(self) {
+            return String(format: "%.0f", self)
         } else {
-            return String(format: "%.1f", self)
+            return String(format: "%.2f", self)
         }
     }
+
+    /// Format to exactly 2 decimal places
+    var twoDecimalPlaces: String {
+        String(format: "%.2f", self)
+    }
 }
+
 
 // MARK: - View Extensions
 

@@ -14,6 +14,13 @@ import CoreML
 import Vision
 import Observation
 
+// MARK: - Sendable Wrapper for CVPixelBuffer
+/// Wrapper to make CVPixelBuffer sendable across concurrency boundaries.
+/// CVPixelBuffer is thread-safe (Core Foundation type with automatic memory management).
+private struct SendablePixelBuffer: @unchecked Sendable {
+    let buffer: CVPixelBuffer
+}
+
 @Observable
 final class WasteClassifierService: NSObject {
     enum AuthorizationState {
@@ -205,18 +212,16 @@ final class WasteClassifierService: NSObject {
 
     // MARK: - Vision-based Classification (Real ML)
     nonisolated private func classifyWithVision(pixelBuffer: CVPixelBuffer, request: VNCoreMLRequest) {
+        // Perform Vision request synchronously on current queue (already on visionQueue from caller)
+        // This avoids @Sendable closure issues with non-Sendable types
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: .up, options: [:])
-        let localRequest = request
-        let localBuffer = pixelBuffer
 
-        visionQueue.async { [weak self] in
-            do {
-                try handler.perform([localRequest])
-            } catch {
-                print("⚠️ Vision request failed: \(error.localizedDescription)")
-                // Fall back to color detection on error
-                self?.classifyWithColorHeuristic(pixelBuffer: localBuffer)
-            }
+        do {
+            try handler.perform([request])
+        } catch {
+            print("⚠️ Vision request failed: \(error.localizedDescription)")
+            // Fall back to color detection on error
+            classifyWithColorHeuristic(pixelBuffer: pixelBuffer)
         }
     }
 
@@ -371,14 +376,22 @@ extension WasteClassifierService: AVCaptureVideoDataOutputSampleBufferDelegate {
                                    from connection: AVCaptureConnection) {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
+        // Wrap pixel buffer in Sendable wrapper for safe cross-thread transfer
+        // Swift automatically manages CVPixelBuffer memory, no manual retain needed
+        let sendableBuffer = SendablePixelBuffer(buffer: pixelBuffer)
+
         // Use Vision ML model if available, otherwise fall back to color detection
-        // Access main-actor property safely
-        Task { @MainActor [weak self] in
+        // Dispatch to vision queue to avoid blocking capture queue
+        visionQueue.async { [weak self] in
             guard let self = self else { return }
+
+            let buffer = sendableBuffer.buffer
+
+            // Access classificationRequest synchronously - it's set once during init
             if let request = self.classificationRequest {
-                self.classifyWithVision(pixelBuffer: pixelBuffer, request: request)
+                self.classifyWithVision(pixelBuffer: buffer, request: request)
             } else {
-                self.classifyWithColorHeuristic(pixelBuffer: pixelBuffer)
+                self.classifyWithColorHeuristic(pixelBuffer: buffer)
             }
         }
     }

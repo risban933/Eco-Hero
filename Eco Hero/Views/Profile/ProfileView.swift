@@ -11,6 +11,7 @@ import SwiftData
 struct ProfileView: View {
     var embedInNavigation: Bool = true
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthenticationManager.self) private var authManager
     @Query private var profiles: [UserProfile]
     @Query private var activities: [EcoActivity]
@@ -74,7 +75,9 @@ struct ProfileView: View {
         }
         .background(
             LinearGradient(
-                colors: [AppConstants.Colors.sand, Color(.systemGroupedBackground)],
+                colors: colorScheme == .dark
+                    ? [Color.green.opacity(0.3), Color.black]
+                    : [Color.green.opacity(0.15), Color.white],
                 startPoint: .top,
                 endPoint: .bottom
             )

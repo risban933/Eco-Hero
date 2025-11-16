@@ -10,6 +10,7 @@ import SwiftUI
 struct LearnView: View {
     var embedInNavigation: Bool = true
     @Environment(TipModelService.self) private var tipModel
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedCategory: ActivityCategory = .meals
     @State private var smartTip: String?
     @State private var factOfDay: String = AppConstants.EducationalFacts.randomFact()
@@ -41,7 +42,9 @@ struct LearnView: View {
         }
         .background(
             LinearGradient(
-                colors: [AppConstants.Colors.sand, Color(.systemBackground)],
+                colors: colorScheme == .dark
+                    ? [Color.green.opacity(0.3), Color.black]
+                    : [Color.green.opacity(0.15), Color.white],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -101,8 +104,15 @@ struct LearnView: View {
 
     private var smartTipSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Smart tip generator")
-                .font(.headline)
+            HStack {
+                Text("Smart tip generator")
+                    .font(.headline)
+                Spacer()
+                if tipModel.isGenerating {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                }
+            }
 
             Picker("Focus Area", selection: $selectedCategory) {
                 ForEach(ActivityCategory.allCases, id: \.self) { category in
@@ -112,23 +122,44 @@ struct LearnView: View {
             }
             .pickerStyle(.segmented)
 
-            Text(smartTip ?? "Request an AI-guided suggestion tailored to your current focus.")
-                .font(.body)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            VStack(alignment: .leading, spacing: 8) {
+                if tipModel.isGenerating && !tipModel.streamedTip.isEmpty {
+                    Text(tipModel.streamedTip)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .animation(.easeInOut(duration: 0.1), value: tipModel.streamedTip)
+                } else if let tip = smartTip, !tip.isEmpty {
+                    Text(tip)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text("Tap below to generate an AI-powered tip using Apple Intelligence.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .frame(minHeight: 80)
 
             Button(action: generateSmartTip) {
-                Label("Generate Smart Tip", systemImage: "bolt.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(AppConstants.Gradients.accent)
-                    .foregroundStyle(.white)
-                    .cornerRadius(AppConstants.Layout.cardCornerRadius)
+                Label(
+                    tipModel.isGenerating ? "Generating..." : "Generate Smart Tip",
+                    systemImage: tipModel.isGenerating ? "sparkles" : "bolt.fill"
+                )
+                .font(.headline)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(AppConstants.Gradients.accent)
+                .foregroundStyle(.white)
+                .cornerRadius(AppConstants.Layout.cardCornerRadius)
             }
             .buttonStyle(.plain)
+            .disabled(tipModel.isGenerating)
+            .opacity(tipModel.isGenerating ? 0.7 : 1.0)
         }
         .cardStyle()
         .onAppear {
@@ -151,9 +182,13 @@ struct LearnView: View {
     }
 
     private func generateSmartTip() {
-        smartTip = tipModel.generateTip(for: selectedCategory)
+        Task {
+            await tipModel.generateStreamingTip(for: selectedCategory)
+            smartTip = tipModel.streamedTip
+        }
     }
 }
+
 
 struct CategoryTipCard: View {
     let category: ActivityCategory

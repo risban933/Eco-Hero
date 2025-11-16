@@ -12,7 +12,7 @@ enum AppTab: String, CaseIterable {
     case log = "Log"
     case challenges = "Challenges"
     case scanner = "Sorter"
-    case more = "More"
+    case learn = "Learn"
 
     var icon: String {
         switch self {
@@ -20,7 +20,7 @@ enum AppTab: String, CaseIterable {
         case .log: return "plus.circle.fill"
         case .challenges: return "trophy.fill"
         case .scanner: return "camera.fill"
-        case .more: return "ellipsis.circle.fill"
+        case .learn: return "book.fill"
         }
     }
 }
@@ -46,7 +46,7 @@ struct MainTabView: View {
                 WasteSortingView()
             }
 
-            Tab(AppTab.more.rawValue, systemImage: AppTab.more.icon, value: .more) {
+            Tab(AppTab.learn.rawValue, systemImage: AppTab.learn.icon, value: .learn) {
                 MoreView()
             }
         }

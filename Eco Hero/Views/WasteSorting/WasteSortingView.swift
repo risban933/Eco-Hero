@@ -64,7 +64,7 @@ struct WasteSortingView: View {
 
                     // Bottom controls area
                     VStack(spacing: 16) {
-                        if let feedbackText {
+                        if feedbackText != nil {
                             feedbackBanner
                         }
 

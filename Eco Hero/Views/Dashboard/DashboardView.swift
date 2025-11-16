@@ -10,6 +10,7 @@ import SwiftData
 
 struct DashboardView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthenticationManager.self) private var authManager
     @Query private var activities: [EcoActivity]
     @Query private var profiles: [UserProfile]
@@ -49,7 +50,9 @@ struct DashboardView: View {
             }
             .background(
                 LinearGradient(
-                    colors: [AppConstants.Colors.sand, Color(.systemBackground)],
+                    colors: colorScheme == .dark
+                        ? [Color.green.opacity(0.3), Color.black]
+                        : [Color.green.opacity(0.15), Color.white],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -77,7 +80,7 @@ struct DashboardView: View {
 
     private var heroHeader: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(userProfile?.displayName ?? "Hey Eco Hero")
+            Text("Welcome Eco Hero,")
                 .font(.largeTitle.bold())
             Text("You're on an \(userProfile?.streak ?? 0)-day streak. Keep the planet loving you back.")
                 .font(.subheadline)
@@ -105,7 +108,7 @@ struct DashboardView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Label("\(profile.totalCarbonSavedKg.rounded(toPlaces: 1)) kg CO₂", systemImage: "cloud.fill")
+                        Label("\(profile.totalCarbonSavedKg.rounded(toPlaces: 2)) kg CO₂", systemImage: "cloud.fill")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -352,7 +355,7 @@ struct ActivityRowView: View {
             Spacer()
 
             if activity.carbonSavedKg > 0 {
-                Text("−\(activity.carbonSavedKg.rounded(toPlaces: 1)) kg CO₂")
+                Text("−\(activity.carbonSavedKg.rounded(toPlaces: 2)) kg CO₂")
                     .font(.caption)
                     .padding(.vertical, 4)
                     .padding(.horizontal, 8)
