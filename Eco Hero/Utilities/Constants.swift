@@ -62,7 +62,7 @@ struct AppConstants {
         )
 
         static let mellow = LinearGradient(
-            colors: [Color.white.opacity(0.12), Color.white.opacity(0.02)],
+            colors: [Color.primary.opacity(0.08), Color.primary.opacity(0.02)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

@@ -166,7 +166,7 @@ struct ChallengesView: View {
                     .padding(.vertical, 12)
                     .background {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(selectedTab == tab ? AnyShapeStyle(AppConstants.Gradients.accent) : AnyShapeStyle(Color.white.opacity(0.12)))
+                            .fill(selectedTab == tab ? AnyShapeStyle(AppConstants.Gradients.accent) : AnyShapeStyle(Color.primary.opacity(0.08)))
                     }
                     .foregroundStyle(selectedTab == tab ? .white : .primary)
                 }
@@ -174,7 +174,7 @@ struct ChallengesView: View {
             }
         }
         .padding(6)
-        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func challengesSection<Content: View>(title: String, subtitle: String, items: [Challenge], @ViewBuilder content: @escaping (Challenge) -> Content) -> some View {
@@ -419,7 +419,7 @@ struct ChallengeCardView: View {
             RoundedRectangle(cornerRadius: AppConstants.Layout.cardCornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [tint.opacity(0.35), Color.white.opacity(0.9)],
+                        colors: [tint.opacity(0.35), Color(.systemBackground).opacity(0.9)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -427,7 +427,7 @@ struct ChallengeCardView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: AppConstants.Layout.cardCornerRadius, style: .continuous)
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -551,16 +551,16 @@ struct HeroStatView: View {
         VStack(alignment: .leading, spacing: 4) {
             Image(systemName: icon)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(.white.opacity(0.85))
             Text(value)
                 .font(.title3.bold())
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.white.opacity(0.9))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 

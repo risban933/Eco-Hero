@@ -19,41 +19,71 @@ struct WasteSortingView: View {
     @State private var streak: Int = 0
     @State private var feedbackText: String?
     @State private var showPermissionAlert = false
+    @State private var lastResultCorrect: Bool?
+    @State private var showFlash: Bool = false
+    @Namespace private var glassNamespace
 
     private let impactGenerator = UINotificationFeedbackGenerator()
 
     var body: some View {
-        VStack(spacing: 20) {
-            ZStack(alignment: .topLeading) {
-                CameraPreviewView(session: classifier.session)
-                    .frame(maxWidth: .infinity, maxHeight: 320)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .shadow(radius: 8)
+        ZStack {
+            // Full-screen camera background
+            CameraPreviewView(session: classifier.session)
+                .ignoresSafeArea()
 
-                predictionOverlay
-            }
-            .padding(.horizontal)
+            // Subtle vignette overlay
+            RadialGradient(
+                colors: [.clear, .black.opacity(0.4)],
+                center: .center,
+                startRadius: 200,
+                endRadius: 500
+            )
+            .ignoresSafeArea()
 
-            scorePanel
-
-            if let feedbackText {
-                Text(feedbackText)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemGreen).opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.horizontal)
+            // Flash effect on selection
+            if showFlash {
+                Rectangle()
+                    .fill(lastResultCorrect == true ? Color.green.opacity(0.25) : Color.red.opacity(0.25))
+                    .ignoresSafeArea()
+                    .transition(.opacity)
             }
 
-            binButtons
-                .padding(.horizontal)
+            // Main content with Liquid Glass
+            GlassEffectContainer(spacing: 30) {
+                VStack(spacing: 0) {
+                    // Top stats bar with Liquid Glass
+                    topStatsBar
+                        .padding(.top, 60)
+                        .padding(.horizontal, 20)
 
-            recentHistory
+                    Spacer()
+
+                    // Center prediction display with Liquid Glass
+                    predictionOverlay
+                        .padding(.bottom, 30)
+
+                    // Bottom controls area
+                    VStack(spacing: 16) {
+                        if let feedbackText {
+                            feedbackBanner
+                        }
+
+                        binButtons
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
+                }
+            }
         }
-        .padding(.vertical)
-        .navigationTitle("Vision Sorter")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Vision Sorter")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+            }
+        }
         .alert("Camera Access Needed", isPresented: $showPermissionAlert) {
             Button("Open Settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -72,103 +102,190 @@ struct WasteSortingView: View {
         }
     }
 
-    private var predictionOverlay: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Detected", systemImage: "camera.viewfinder")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(classifier.predictedBin.rawValue)
-                .font(.title2.bold())
-
-            Text("Confidence \(Int(classifier.confidence * 100))%")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    private var topStatsBar: some View {
+        HStack(spacing: 12) {
+            statBadge(title: "Score", value: "\(score)", icon: "star.fill", color: .yellow)
+            statBadge(title: "Streak", value: "\(streak)", icon: "flame.fill", color: .orange)
+            statBadge(title: "Accuracy", value: "\(accuracyString)%", icon: "target", color: .green)
         }
-        .padding()
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .padding()
+        .glassEffectUnion(id: "stats", namespace: glassNamespace)
     }
 
-    private var scorePanel: some View {
-        HStack(spacing: 16) {
-            VStack {
-                Text("Score")
-                    .font(.headline)
-                Text("\(score)")
-                    .font(.system(size: 32, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
+    private func statBadge(title: String, value: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(color)
 
-            VStack {
-                Text("Streak")
-                    .font(.headline)
-                Text("\(streak)")
-                    .font(.system(size: 32, weight: .bold))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                Text(value)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
             }
-            .frame(maxWidth: .infinity)
-
-            VStack {
-                Text("Accuracy")
-                    .font(.headline)
-                Text("\(accuracyString)%")
-                    .font(.system(size: 32, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
         }
-        .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .padding(.horizontal)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .glassEffect(.regular)
+        .glassEffectID("stat-\(title)", in: glassNamespace)
+    }
+
+    private var predictionOverlay: some View {
+        VStack(spacing: 16) {
+            // Scanning indicator
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color.green)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: .green, radius: 6)
+                    .modifier(PulsingModifier())
+
+                Text("ANALYZING")
+                    .font(.caption.bold())
+                    .foregroundStyle(.white.opacity(0.9))
+                    .tracking(3)
+            }
+
+            // Main prediction
+            VStack(spacing: 10) {
+                Image(systemName: classifier.predictedBin.icon)
+                    .font(.system(size: 56, weight: .medium))
+                    .foregroundStyle(classifier.predictedBin.color)
+                    .shadow(color: classifier.predictedBin.color.opacity(0.6), radius: 12)
+                    .contentTransition(.symbolEffect(.replace))
+
+                Text(classifier.predictedBin.rawValue.uppercased())
+                    .font(.system(size: 36, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .tracking(2)
+                    .contentTransition(.numericText())
+
+                // Confidence meter
+                confidenceMeter
+            }
+        }
+        .padding(.vertical, 28)
+        .padding(.horizontal, 36)
+        .glassEffect(.regular.tint(classifier.predictedBin.color.opacity(0.2)).interactive(), in: .rect(cornerRadius: 32))
+        .glassEffectID("prediction", in: glassNamespace)
+    }
+
+    private var confidenceMeter: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(.white.opacity(0.15))
+                        .frame(height: 8)
+
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [classifier.predictedBin.color.opacity(0.7), classifier.predictedBin.color],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: geo.size.width * classifier.confidence, height: 8)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: classifier.confidence)
+                }
+            }
+            .frame(height: 8)
+            .frame(width: 200)
+
+            Text("\(Int(classifier.confidence * 100))% confidence")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.white.opacity(0.8))
+        }
+    }
+
+    private var feedbackBanner: some View {
+        HStack(spacing: 14) {
+            Image(systemName: lastResultCorrect == true ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(lastResultCorrect == true ? .green : .red)
+                .contentTransition(.symbolEffect(.replace))
+
+            Text(feedbackText ?? "")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.leading)
+
+            Spacer()
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .glassEffect(.regular.tint((lastResultCorrect == true ? Color.green : Color.red).opacity(0.4)), in: .rect(cornerRadius: 20))
+        .glassEffectID("feedback", in: glassNamespace)
+        .glassEffectTransition(.materialize)
+        .transition(.asymmetric(
+            insertion: .move(edge: .top).combined(with: .opacity),
+            removal: .opacity
+        ))
     }
 
     private var binButtons: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 24) {
             ForEach(WasteBin.allCases, id: \.self) { bin in
                 Button {
-                    evaluateSelection(bin)
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        evaluateSelection(bin)
+                    }
                 } label: {
                     VStack(spacing: 8) {
                         Image(systemName: bin.icon)
-                            .font(.title)
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundStyle(.white)
+
                         Text(bin.rawValue)
-                            .font(.headline)
+                            .font(.subheadline.bold())
+                            .foregroundStyle(.white)
                     }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 80)
-                    .background(bin.color)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .frame(width: 120)
+                    .padding(.vertical, 16)
                 }
+                .buttonStyle(.glass(.regular.tint(binColor(for: bin).opacity(0.6)).interactive()))
+                .glassEffectID("bin-\(bin.rawValue)", in: glassNamespace)
             }
         }
     }
 
-    private var recentHistory: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Recent Rounds")
-                .font(.headline)
-                .padding(.horizontal)
-
-            ForEach(recentResults.prefix(5)) { result in
-                HStack {
-                    Image(systemName: result.isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(result.isCorrect ? Color.green : Color.red)
-                    VStack(alignment: .leading) {
-                        Text("Predicted \(result.predictedBin.rawValue)")
-                            .font(.subheadline.bold())
-                        Text("You chose \(result.userSelection.rawValue)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text("\(result.pointsAwarded > 0 ? "+" : "")\(result.pointsAwarded)")
-                        .font(.headline)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-            }
+    private func binColor(for bin: WasteBin) -> Color {
+        switch bin {
+        case .recycle:
+            return .blue
+        case .compost:
+            return .green
         }
+    }
+
+    private var recentHistoryCompact: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.6))
+
+            ForEach(recentResults.prefix(10)) { result in
+                Circle()
+                    .fill(result.isCorrect ? Color.green : Color.red)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: result.isCorrect ? .green.opacity(0.6) : .red.opacity(0.6), radius: 4)
+            }
+
+            if recentResults.isEmpty {
+                Text("No attempts yet")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .glassEffect(.regular, in: .capsule)
+        .glassEffectID("history", in: glassNamespace)
     }
 
     private func evaluateSelection(_ bin: WasteBin) {
@@ -178,7 +295,31 @@ struct WasteSortingView: View {
 
         score += points
         streak = correct ? streak + 1 : 0
-        feedbackText = correct ? "Great job! That belongs in \(bin.rawValue)." : "Try again! This item should go to \(predicted.rawValue)."
+        lastResultCorrect = correct
+
+        withAnimation(.easeInOut(duration: 0.12)) {
+            showFlash = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.easeInOut(duration: 0.15)) {
+                showFlash = false
+            }
+        }
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            feedbackText = correct
+                ? "Perfect! \(bin.rawValue) is correct."
+                : "Not quite! That's \(predicted.rawValue)."
+        }
+
+        // Auto-dismiss feedback
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                feedbackText = nil
+            }
+        }
+
         impactGenerator.notificationOccurred(correct ? .success : .error)
 
         let result = WasteSortingResult(predictedBin: predicted,
@@ -215,9 +356,26 @@ struct WasteSortingView: View {
     }
 }
 
+// MARK: - Pulsing Animation Modifier
+struct PulsingModifier: ViewModifier {
+    @State private var isPulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(isPulsing ? 1.3 : 1.0)
+            .opacity(isPulsing ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isPulsing)
+            .onAppear {
+                isPulsing = true
+            }
+    }
+}
+
 #Preview {
-    WasteSortingView()
-        .environment(AuthenticationManager())
-        .environment(WasteClassifierService())
-        .modelContainer(for: WasteSortingResult.self, inMemory: true)
+    NavigationStack {
+        WasteSortingView()
+            .environment(AuthenticationManager())
+            .environment(WasteClassifierService())
+            .modelContainer(for: WasteSortingResult.self, inMemory: true)
+    }
 }

@@ -100,12 +100,12 @@ struct ProfileView: View {
                     if let profile = userProfile {
                         Text(AppConstants.Levels.levelTitle(for: profile.currentLevel))
                             .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(.white.opacity(0.9))
                     }
                     if let email = authManager.currentUserEmail {
                         Text(email)
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(.white.opacity(0.85))
                     }
                 }
                 Spacer()
@@ -131,7 +131,7 @@ struct ProfileView: View {
 
                     Text("XP \(Int(profile.experiencePoints)) of \(profile.currentLevel * 100)")
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
             }
         }

@@ -73,7 +73,7 @@ struct LearnView: View {
 
             Text("Share this insight with a friend today.")
                 .font(.footnote)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(.white.opacity(0.9))
         }
         .padding(24)
         .background(

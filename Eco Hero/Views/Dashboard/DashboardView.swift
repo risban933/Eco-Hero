@@ -282,7 +282,7 @@ struct DashboardView: View {
                 .font(.body)
                 .foregroundStyle(.primary)
         }
-        .cardStyle(background: Color.white, borderOpacity: 0.05)
+        .cardStyle(background: Color(.secondarySystemGroupedBackground), borderOpacity: 0.05)
     }
 
     private var activitiesThisWeek: [EcoActivity] {
