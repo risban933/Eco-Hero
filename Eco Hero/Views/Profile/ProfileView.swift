@@ -21,6 +21,11 @@ struct ProfileView: View {
     @State private var showingLogoutAlert = false
     @State private var scrollOffset: CGFloat = 0
     @State private var showSparkles = false
+    @State private var showingShareSheet = false
+    @State private var shareImage: UIImage?
+    @State private var selectedReportPeriod: ReportPeriod = .allTime
+
+    private let reportGenerator = ReportGeneratorService()
 
     private var userProfile: UserProfile? {
         profiles.first { $0.userIdentifier == authManager.currentUserID ?? "" }
@@ -71,6 +76,8 @@ struct ProfileView: View {
                 profileHeader
                     .bounceIn(delay: 0.1)
                 statsGrid
+                shareImpactSection
+                    .bounceIn(delay: 0.25)
                 achievementsSummary
                 activityBreakdown
                 accountSection
@@ -200,6 +207,79 @@ struct ProfileView: View {
                 )
             }
         }
+    }
+
+    // MARK: - Share Your Impact
+    private var shareImpactSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Share Your Impact")
+                .font(.headline)
+
+            VStack(spacing: 12) {
+                // Share Image Button
+                Button {
+                    generateAndShareImage()
+                } label: {
+                    HStack {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.body.weight(.medium))
+                        Text("Share Impact Card")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Image(systemName: "photo.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 16)
+                }
+                .buttonStyle(.plain)
+
+                Divider()
+                    .padding(.horizontal, 16)
+
+                // Copy Text Button
+                Button {
+                    copyShareText()
+                } label: {
+                    HStack {
+                        Image(systemName: "doc.on.doc")
+                            .font(.body.weight(.medium))
+                        Text("Copy Impact Summary")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Image(systemName: "text.alignleft")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 14)
+                    .padding(.horizontal, 16)
+                }
+                .buttonStyle(.plain)
+            }
+            .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 16))
+        }
+        .sheet(isPresented: $showingShareSheet) {
+            if let image = shareImage {
+                ShareSheet(items: [image])
+            }
+        }
+    }
+
+    private func generateAndShareImage() {
+        guard let profile = userProfile else { return }
+
+        shareImage = reportGenerator.generateShareImage(for: profile)
+        if shareImage != nil {
+            showingShareSheet = true
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        }
+    }
+
+    private func copyShareText() {
+        guard let profile = userProfile else { return }
+
+        let text = reportGenerator.generateShareText(for: profile)
+        UIPasteboard.general.string = text
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 
     // MARK: - Achievements
@@ -777,21 +857,16 @@ struct SettingsView: View {
     }
 }
 
-struct AchievementsListView: View {
-    @Query private var achievements: [Achievement]
+// MARK: - Share Sheet
 
-    var body: some View {
-        ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 16) {
-                ForEach(achievements) { achievement in
-                    AchievementBadgeView(achievement: achievement)
-                }
-            }
-            .padding()
-        }
-        .navigationTitle("Achievements")
-        .background(Color(.systemGroupedBackground))
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
     }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {
