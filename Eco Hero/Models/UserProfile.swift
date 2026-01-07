@@ -22,6 +22,7 @@ final class UserProfile {
     var totalWaterSavedLiters: Double
     var totalLandSavedSqMeters: Double
     var totalPlasticSavedItems: Int
+    var totalActivitiesLogged: Int
 
     // Gamification
     var currentLevel: Int
@@ -54,6 +55,7 @@ final class UserProfile {
         self.totalWaterSavedLiters = 0
         self.totalLandSavedSqMeters = 0
         self.totalPlasticSavedItems = 0
+        self.totalActivitiesLogged = 0
 
         // Initialize gamification
         self.currentLevel = 1
@@ -74,6 +76,7 @@ final class UserProfile {
         totalWaterSavedLiters += activity.waterSavedLiters
         totalLandSavedSqMeters += activity.landSavedSqMeters
         totalPlasticSavedItems += activity.plasticSavedItems
+        totalActivitiesLogged += 1
 
         // Add experience points
         let points = activity.carbonSavedKg * 10 +
@@ -88,6 +91,9 @@ final class UserProfile {
 
         // Update streak
         updateStreak()
+
+        // Sync to widget
+        syncToWidget()
     }
 
     private func updateStreak() {

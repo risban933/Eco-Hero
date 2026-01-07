@@ -13,6 +13,8 @@ struct ChallengesView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(AuthenticationManager.self) private var authManager
     @Environment(FoundationContentService.self) private var foundationContentService
+    @Environment(ChallengeManager.self) private var challengeManager
+    @Environment(NotificationService.self) private var notificationService
     @Query private var challenges: [Challenge]
     @Query private var achievements: [Achievement]
 
@@ -21,6 +23,7 @@ struct ChallengesView: View {
     @State private var generationMessage: String?
     @State private var scrollOffset: CGFloat = 0
     @State private var showCelebration = false
+    @State private var showFailedAlert = false
     @Namespace private var glassNamespace
 
     enum ChallengeTab: String, CaseIterable, Identifiable {
@@ -107,7 +110,19 @@ struct ChallengesView: View {
                 .ignoresSafeArea()
             )
             .navigationTitle("Challenges")
-            .onAppear(perform: initializeChallenges)
+            .onAppear {
+                initializeChallenges()
+                checkForFailedChallenges()
+            }
+            .alert("Challenge Expired", isPresented: $showFailedAlert) {
+                Button("OK", role: .cancel) {
+                    challengeManager.clearRecentlyFailed()
+                }
+            } message: {
+                if let failed = challengeManager.recentlyFailedChallenges.first {
+                    Text("\"\(failed.title)\" has expired. Don't give up - try again!")
+                }
+            }
             .overlay {
                 if showCelebration {
                     CelebrationOverlay(
@@ -316,23 +331,28 @@ struct ChallengesView: View {
 
     private func joinChallenge(_ challenge: Challenge) {
         guard let userID = authManager.currentUserID else { return }
-        challenge.join(userID: userID)
 
-        do {
-            try modelContext.save()
-            // Trigger celebration
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                showCelebration = true
-            }
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        } catch {
-            print("Error joining challenge: \(error)")
+        // Use ChallengeManager for proper notification scheduling
+        challengeManager.joinChallenge(challenge, userID: userID)
+
+        // Trigger celebration
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            showCelebration = true
         }
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
     }
 
     private func initializeChallenges() {
         if challenges.isEmpty {
             createDefaultChallenges()
+        }
+        // Check for expirations on appear
+        challengeManager.checkAllExpirations()
+    }
+
+    private func checkForFailedChallenges() {
+        if !challengeManager.recentlyFailedChallenges.isEmpty {
+            showFailedAlert = true
         }
     }
 
@@ -526,9 +546,11 @@ struct ChallengeCardView: View {
 struct EnhancedChallengeCardView: View {
     let challenge: Challenge
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(ChallengeManager.self) private var challengeManager
     @State private var isVisible = false
     @State private var isPressed = false
     @State private var gradientRotation: Double = 0
+    @State private var timeRemaining: String = ""
 
     private var progress: Double {
         guard challenge.targetCount > 0 else { return 0 }
@@ -540,6 +562,11 @@ struct EnhancedChallengeCardView: View {
             return category.color
         }
         return Color.ecoGreen
+    }
+
+    private var isExpiringSoon: Bool {
+        guard let endDate = challenge.endDate else { return false }
+        return endDate.timeIntervalSinceNow < 24 * 3600 && endDate.timeIntervalSinceNow > 0
     }
 
     var body: some View {
@@ -569,11 +596,23 @@ struct EnhancedChallengeCardView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                if let endDate = challenge.endDate {
-                    Text("Ends \(endDate.formatted(date: .abbreviated, time: .omitted))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+
+                // Time remaining badge
+                if !timeRemaining.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: isExpiringSoon ? "exclamationmark.circle.fill" : "clock")
+                            .font(.caption2)
+                        Text(timeRemaining)
+                            .font(.caption)
+                    }
+                    .foregroundStyle(isExpiringSoon ? .orange : .secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(isExpiringSoon ? Color.orange.opacity(0.15) : Color.secondary.opacity(0.1))
+                    )
+                    .lineLimit(1)
                 }
             }
 
@@ -657,7 +696,15 @@ struct EnhancedChallengeCardView: View {
             withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                 gradientRotation = 360
             }
+            updateTimeRemaining()
         }
+        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { _ in
+            updateTimeRemaining()
+        }
+    }
+
+    private func updateTimeRemaining() {
+        timeRemaining = challengeManager.timeRemaining(for: challenge) ?? ""
     }
 }
 
@@ -1227,5 +1274,7 @@ struct EmptyStateView: View {
     ChallengesView()
         .environment(AuthenticationManager())
         .environment(FoundationContentService())
+        .environment(ChallengeManager())
+        .environment(NotificationService())
         .modelContainer(for: [Challenge.self, Achievement.self], inMemory: true)
 }

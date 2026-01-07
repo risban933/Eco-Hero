@@ -332,7 +332,8 @@ struct WasteSortingView: View {
         let correct = predicted == bin
         let points = correct ? 10 : -5
 
-        score += points
+        // Ensure score doesn't go below 0
+        score = max(0, score + points)
         streak = correct ? streak + 1 : 0
         lastResultCorrect = correct
 
@@ -367,7 +368,11 @@ struct WasteSortingView: View {
                                         confidence: classifier.confidence,
                                         pointsAwarded: points)
         modelContext.insert(result)
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            print("⚠️ WasteSorting: Failed to save result: \(error.localizedDescription)")
+        }
     }
 
     private var accuracyString: String {
